@@ -3,7 +3,7 @@ import axios from "axios";
 import { AuthProvider } from "./context";
 import { StackMenu } from "./routes";
 
-axios.defaults.baseURL = "http://192.168.0.35:3000";
+axios.defaults.baseURL = "http://192.168.0.22:3000";
 export default function App() {
   return (
     <AuthProvider>

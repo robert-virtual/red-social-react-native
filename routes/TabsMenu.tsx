@@ -2,7 +2,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { FC } from "react";
 import { Posts, Profile, Search } from "../pages";
 import { AntDesign } from "@expo/vector-icons";
-type TabsPages = {
+export type TabsPages = {
   Posts: undefined;
   Profile: undefined;
   Search: undefined;
@@ -15,6 +15,7 @@ export const TabsMenu: FC = () => {
     <Tab.Navigator>
       <Tab.Screen
         options={{
+          title: "Red Social",
           tabBarShowLabel: false,
           tabBarIcon: ({ color, size }) => (
             <AntDesign name="home" size={size} color={color} />
