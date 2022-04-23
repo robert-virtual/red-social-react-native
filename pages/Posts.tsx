@@ -1,12 +1,17 @@
 import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
-import { FC, useLayoutEffect, useState } from "react";
+import { FC, useEffect, useLayoutEffect, useState } from "react";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { TabsPages } from "../routes/TabsMenu";
-import axios from "axios";
-
+import {
+  getCameraPermissionsAsync,
+  requestCameraPermissionsAsync,
+  ImagePickerResult,
+} from "expo-image-picker";
+import { Pages } from "../routes";
+import { Gallery } from "../components";
 interface Props {
-  navigation: NativeStackNavigationProp<TabsPages, "Posts">;
+  navigation: NativeStackNavigationProp<TabsPages & Pages, "Posts">;
 }
 
 interface IPost {
@@ -15,27 +20,22 @@ interface IPost {
 }
 
 export const Posts: FC<Props> = ({ navigation }) => {
-  const [content, setContent] = useState("");
-  const [images, setImages] = useState([]);
-  const [bottom, setBottom] = useState<"-100%" | "0">("-100%");
-  function crearPost() {
-    const form = new FormData();
-    form.append("content", content);
-    images.forEach(({ uri, type }) => {
-      form.append("images", { name: "", type, uri });
+  useEffect(() => {
+    getCameraPermissionsAsync().then(({ granted }) => {
+      if (!granted) {
+        requestCameraPermissionsAsync();
+      }
     });
-    axios.post("/posts", form, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-  }
+  }, []);
+  const [menuVisible, setMenuVisible] = useState(false);
   function toggleMenu() {
-    setBottom((bottom) => (bottom == "-100%" ? "0" : "-100%"));
+    setMenuVisible((v) => !v);
   }
-  function openGallery() {}
-  function openCamera() {}
-
+  function goToCreatePost(res: ImagePickerResult) {
+    if (!res.cancelled) {
+      navigation.navigate("CreatePost", { images: [res] });
+    }
+  }
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -53,46 +53,12 @@ export const Posts: FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text>Posts</Text>
-      <View
-        style={{ position: "absolute", height: "100%", width: "100%", bottom }}
-      >
-        <View
-          onTouchEnd={toggleMenu}
-          style={{ width: "100%", height: "100%" }}
-        />
-        <View
-          style={{
-            position: "absolute",
-            backgroundColor: "#f3f3f3",
-            padding: 15,
-            width: "100%",
-            bottom: "0",
-            borderTopEndRadius: 15,
-            borderTopStartRadius: 15,
-            shadowRadius: 5,
-            shadowOpacity: 0.25,
-          }}
-        >
-          <TouchableOpacity style={styles.option} onPress={openGallery}>
-            <AntDesign
-              name="picture"
-              size={24}
-              color="black"
-              style={{ marginRight: 10 }}
-            />
-            <Text>Abrir Galleria</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={openCamera}>
-            <AntDesign
-              name="camera"
-              size={24}
-              color="black"
-              style={{ marginRight: 10 }}
-            />
-            <Text>Abrir Camara</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+
+      <Gallery
+        setVisible={setMenuVisible}
+        getImage={goToCreatePost}
+        visible={menuVisible}
+      />
     </View>
   );
 };

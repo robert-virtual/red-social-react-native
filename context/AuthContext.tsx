@@ -37,8 +37,11 @@ export const AuthProvider: FC = ({ children }) => {
     axios
       .get("/refresh", { params: { refreshToken: token } })
       .then(({ data }) => {
+        console.log(data);
+
         if (data.aToken) {
           setAuth({ aToken: data.aToken, isAuth: true });
+          axios.defaults.headers.common = { authorization: data.aToken };
         }
       });
   }, []);
