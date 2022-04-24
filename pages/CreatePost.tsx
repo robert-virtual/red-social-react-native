@@ -2,7 +2,7 @@ import { RouteProp } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
 import { ImageInfo } from "expo-image-picker";
-import { FC, useEffect, useLayoutEffect, useState } from "react";
+import { FC, useContext, useEffect, useLayoutEffect, useState } from "react";
 import {
   StyleSheet,
   View,
@@ -19,6 +19,7 @@ import { AntDesign } from "@expo/vector-icons";
 
 import { Pages } from "../routes";
 import { Gallery } from "../components";
+import { AuthContext } from "../context";
 declare global {
   interface Blob {
     name: string;
@@ -36,6 +37,7 @@ export const CreatePost: FC<Props> = ({ navigation, route }) => {
   function toggleMenu() {
     setMenuVisible((v) => !v);
   }
+  const { aToken } = useContext(AuthContext);
   const [images, setImages] = useState<ImageInfo[]>(route.params.images);
   const [content, setContent] = useState("");
   const { width } = useWindowDimensions();
@@ -67,19 +69,10 @@ export const CreatePost: FC<Props> = ({ navigation, route }) => {
         name: `name.${ext}`,
         type: `${type}/${ext}`,
         uri,
-      } as Blob);
+      });
     });
 
-    fetch(axios.defaults.baseURL + "/posts", {
-      method: "post",
-      body: form,
-      headers: {
-        ...axios.defaults.headers.common,
-        "Content-Type": "multipart/form-data",
-      },
-    })
-      .then((res) => res.json())
-      .then(console.log);
+    axios.post("/posts", form, {}).then(({ data }) => console.log(data));
   }
 
   return (
