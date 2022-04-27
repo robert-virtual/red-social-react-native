@@ -12,7 +12,7 @@ const Tab = createBottomTabNavigator<TabsPages>();
 
 export const TabsMenu: FC = () => {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator initialRouteName="Profile`">
       <Tab.Screen
         options={{
           title: "Red Social",

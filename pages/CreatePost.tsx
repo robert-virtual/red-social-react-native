@@ -1,8 +1,23 @@
 import { RouteProp } from "@react-navigation/native";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import axios from "axios";
-import { ImageInfo } from "expo-image-picker";
-import { FC, useContext, useEffect, useLayoutEffect, useState } from "react";
+import {
+  ImageInfo,
+  ImagePickerResult,
+  launchCameraAsync,
+  launchImageLibraryAsync,
+  MediaTypeOptions,
+} from "expo-image-picker";
+import {
+  FC,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   StyleSheet,
   View,
@@ -18,8 +33,9 @@ import {
 import { AntDesign } from "@expo/vector-icons";
 
 import { Pages } from "../routes";
-import { Gallery } from "../components";
 import { AuthContext } from "../context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { globalStyles } from "./styles";
 declare global {
   interface Blob {
     name: string;
@@ -33,17 +49,16 @@ interface Props {
 }
 
 export const CreatePost: FC<Props> = ({ navigation, route }) => {
-  const [menuVisible, setMenuVisible] = useState(false);
+  const sheetRef = useRef<BottomSheet>(null);
   function toggleMenu() {
-    setMenuVisible((v) => !v);
+    sheetRef.current?.expand();
   }
   const { aToken } = useContext(AuthContext);
+  const snapPoints = useMemo(() => ["25%"], []);
   const [images, setImages] = useState<ImageInfo[]>(route.params.images);
   const [content, setContent] = useState("");
   const { width } = useWindowDimensions();
-  useEffect(() => {
-    console.log("images.length:", images.length);
-  }, [images]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -72,11 +87,38 @@ export const CreatePost: FC<Props> = ({ navigation, route }) => {
       });
     });
 
-    axios.post("/posts", form, {}).then(({ data }) => console.log(data));
+    fetch(axios.defaults.baseURL + "/posts", {
+      method: "post",
+      body: form,
+      headers: {
+        ...axios.defaults.headers.common, // access token
+        "Content-Type": "multipart/form-data",
+      },
+    })
+      .then((res) => res.json())
+      .then((data: any) => {
+        navigation.navigate("TabsMenu");
+      });
   }
 
+  const getImage = (res: ImagePickerResult) => {
+    console.log(res);
+    let i = res as ImageInfo;
+    let ext = i.uri.split(";")[0];
+    ext = ext.split("/")[1];
+    console.log("ext:", ext);
+    setImages([...images, res as ImageInfo]);
+  };
+  function openGallery() {
+    launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.Images }).then(
+      getImage
+    );
+  }
+  function openCamera() {
+    launchCameraAsync({ mediaTypes: MediaTypeOptions.Images }).then(getImage);
+  }
   return (
-    <>
+    <GestureHandlerRootView style={styles.container}>
       <ScrollView>
         <FlatList
           horizontal
@@ -113,20 +155,37 @@ export const CreatePost: FC<Props> = ({ navigation, route }) => {
             />
           </TouchableOpacity>
         </View>
+        <BottomSheet
+          backgroundStyle={{ backgroundColor: "#f3f3f3" }}
+          style={{ padding: 15 }}
+          enablePanDownToClose={true}
+          ref={sheetRef}
+          index={-1}
+          snapPoints={snapPoints}
+        >
+          <View>
+            <TouchableOpacity style={globalStyles.option} onPress={openGallery}>
+              <AntDesign
+                name="picture"
+                size={24}
+                color="black"
+                style={{ marginRight: 10 }}
+              />
+              <Text>Abrir Galleria</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={globalStyles.option} onPress={openCamera}>
+              <AntDesign
+                name="camera"
+                size={24}
+                color="black"
+                style={{ marginRight: 10 }}
+              />
+              <Text>Abrir Camara</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheet>
       </ScrollView>
-      <Gallery
-        setVisible={setMenuVisible}
-        visible={menuVisible}
-        getImage={(res) => {
-          console.log(res);
-          let i = res as ImageInfo;
-          let ext = i.uri.split(";")[0];
-          ext = ext.split("/")[1];
-          console.log("ext:", ext);
-          setImages([...images, res as ImageInfo]);
-        }}
-      />
-    </>
+    </GestureHandlerRootView>
   );
 };
 

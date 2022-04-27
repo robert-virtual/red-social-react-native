@@ -1,25 +1,70 @@
-import { Text, StyleSheet, View, TouchableOpacity } from "react-native";
+import {
+  Text,
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  useWindowDimensions,
+  Image,
+} from "react-native";
 import { AntDesign } from "@expo/vector-icons";
-import { FC, useEffect, useLayoutEffect, useState } from "react";
+import {
+  FC,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { TabsPages } from "../routes/TabsMenu";
+import BottomSheet from "@gorhom/bottom-sheet";
 import {
   getCameraPermissionsAsync,
   requestCameraPermissionsAsync,
   ImagePickerResult,
+  launchCameraAsync,
+  launchImageLibraryAsync,
+  MediaTypeOptions,
 } from "expo-image-picker";
 import { Pages } from "../routes";
-import { Gallery } from "../components";
+import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
+import { globalStyles } from "./styles";
+import axios from "axios";
 interface Props {
   navigation: NativeStackNavigationProp<TabsPages & Pages, "Posts">;
 }
-
-interface IPost {
+interface IImage {
+  url: string;
+  id?: string;
+}
+interface IUser {
+  id: string;
+  name: string;
+}
+export interface IPost {
   content: string;
-  images: [];
+  id?: string;
+  user?: IUser;
+  images: IImage[];
 }
 
 export const Posts: FC<Props> = ({ navigation }) => {
+  const [cargando, setCargando] = useState(false);
+  const { width } = useWindowDimensions();
+  const [posts, setPosts] = useState<IPost[]>([]);
+  function getPosts() {
+    setCargando(true);
+    axios.get("/posts").then(({ data }) => {
+      console.log(posts);
+      setCargando(false);
+      setPosts(data);
+    });
+  }
+  useEffect(() => {
+    getPosts();
+  }, []);
+  const sheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ["25%"], []);
   useEffect(() => {
     getCameraPermissionsAsync().then(({ granted }) => {
       if (!granted) {
@@ -27,9 +72,8 @@ export const Posts: FC<Props> = ({ navigation }) => {
       }
     });
   }, []);
-  const [menuVisible, setMenuVisible] = useState(false);
   function toggleMenu() {
-    setMenuVisible((v) => !v);
+    sheetRef.current?.expand();
   }
   function goToCreatePost(res: ImagePickerResult) {
     if (!res.cancelled) {
@@ -49,17 +93,75 @@ export const Posts: FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       ),
     });
-  }, []);
-  return (
-    <View style={styles.container}>
-      <Text>Posts</Text>
+  }, [sheetRef]);
 
-      <Gallery
-        setVisible={setMenuVisible}
-        getImage={goToCreatePost}
-        visible={menuVisible}
+  function openGallery() {
+    launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.Images }).then(
+      goToCreatePost
+    );
+  }
+  function openCamera() {
+    launchCameraAsync({ mediaTypes: MediaTypeOptions.Images }).then(
+      goToCreatePost
+    );
+  }
+  return (
+    <GestureHandlerRootView style={styles.container}>
+      <FlatList
+        data={posts}
+        onRefresh={getPosts}
+        refreshing={cargando}
+        keyExtractor={(item) => item.id!}
+        renderItem={({ item }) => (
+          <>
+            <FlatList
+              horizontal
+              pagingEnabled
+              data={item.images}
+              keyExtractor={(_, i) => i.toString()}
+              renderItem={({ item: image }) => (
+                <View>
+                  <Image source={{ uri: image.url, width, height: width }} />
+                </View>
+              )}
+            />
+            <View style={{ flexDirection: "row" }}>
+              <Text>{item.user?.name} </Text>
+              <Text>{item.content}</Text>
+            </View>
+          </>
+        )}
       />
-    </View>
+      <BottomSheet
+        backgroundStyle={{ backgroundColor: "#f3f3f3" }}
+        style={{ padding: 15 }}
+        enablePanDownToClose={true}
+        ref={sheetRef}
+        index={-1}
+        snapPoints={snapPoints}
+      >
+        <View>
+          <TouchableOpacity style={globalStyles.option} onPress={openGallery}>
+            <AntDesign
+              name="picture"
+              size={24}
+              color="black"
+              style={{ marginRight: 10 }}
+            />
+            <Text>Abrir Galleria</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={globalStyles.option} onPress={openCamera}>
+            <AntDesign
+              name="camera"
+              size={24}
+              color="black"
+              style={{ marginRight: 10 }}
+            />
+            <Text>Abrir Camara</Text>
+          </TouchableOpacity>
+        </View>
+      </BottomSheet>
+    </GestureHandlerRootView>
   );
 };
 
@@ -69,9 +171,5 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
     justifyContent: "center",
-  },
-  option: {
-    flexDirection: "row",
-    margin: 15,
   },
 });

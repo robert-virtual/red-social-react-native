@@ -4,10 +4,13 @@ import {
   launchCameraAsync,
   ImagePickerResult,
 } from "expo-image-picker";
+import BottomSheet from "@gorhom/bottom-sheet";
 import { AntDesign } from "@expo/vector-icons";
 
-import React, { FC, useEffect, useState } from "react";
-import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
+import React, { FC, useEffect, useMemo, useRef, useState } from "react";
+import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { globalStyles } from "../pages/styles";
 
 interface Props {
   getImage: (res: ImagePickerResult) => void;
@@ -15,11 +18,12 @@ interface Props {
   setVisible: React.Dispatch<React.SetStateAction<boolean>>;
 }
 export const Gallery: FC<Props> = ({ getImage, visible, setVisible }) => {
-  const [bottom, setBottom] = useState<"-100%" | "0">("-100%");
   useEffect(toggleMenu, [visible]);
 
+  const sheetRef = useRef<BottomSheet>(null);
+  const snapPoints = useMemo(() => ["25%"], []);
   function toggleMenu() {
-    setBottom(() => (visible ? "0" : "-100%"));
+    sheetRef.current?.expand;
   }
   function openGallery() {
     setVisible(false);
@@ -32,25 +36,14 @@ export const Gallery: FC<Props> = ({ getImage, visible, setVisible }) => {
     launchCameraAsync({ mediaTypes: MediaTypeOptions.Images }).then(getImage);
   }
   return (
-    <View
-      style={{ position: "absolute", height: "100%", width: "100%", bottom }}
-    >
-      <View
-        onTouchEnd={() => setVisible(false)}
-        style={{ width: "100%", height: "100%" }}
-      />
-      <View
-        style={{
-          position: "absolute",
-          backgroundColor: "#f3f3f3",
-          padding: 15,
-          width: "100%",
-          bottom: "0",
-          borderTopEndRadius: 15,
-          borderTopStartRadius: 15,
-          shadowRadius: 5,
-          shadowOpacity: 0.25,
-        }}
+    <GestureHandlerRootView style={globalStyles.container}>
+      <BottomSheet
+        backgroundStyle={{ backgroundColor: "#f3f3f3" }}
+        style={{ padding: 15 }}
+        enablePanDownToClose={true}
+        index={-1}
+        ref={sheetRef}
+        snapPoints={snapPoints}
       >
         <TouchableOpacity style={styles.option} onPress={openGallery}>
           <AntDesign
@@ -70,8 +63,8 @@ export const Gallery: FC<Props> = ({ getImage, visible, setVisible }) => {
           />
           <Text>Abrir Camara</Text>
         </TouchableOpacity>
-      </View>
-    </View>
+      </BottomSheet>
+    </GestureHandlerRootView>
   );
 };
 
