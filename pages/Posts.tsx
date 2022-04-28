@@ -30,6 +30,7 @@ import { Pages } from "../routes";
 import { FlatList, GestureHandlerRootView } from "react-native-gesture-handler";
 import { globalStyles } from "./styles";
 import axios from "axios";
+import { openCamera, openGallery } from "./functions";
 interface Props {
   navigation: NativeStackNavigationProp<TabsPages & Pages, "Posts">;
 }
@@ -95,16 +96,6 @@ export const Posts: FC<Props> = ({ navigation }) => {
     });
   }, [sheetRef]);
 
-  function openGallery() {
-    launchImageLibraryAsync({ mediaTypes: MediaTypeOptions.Images }).then(
-      goToCreatePost
-    );
-  }
-  function openCamera() {
-    launchCameraAsync({ mediaTypes: MediaTypeOptions.Images }).then(
-      goToCreatePost
-    );
-  }
   return (
     <GestureHandlerRootView style={styles.container}>
       <FlatList
@@ -141,7 +132,10 @@ export const Posts: FC<Props> = ({ navigation }) => {
         snapPoints={snapPoints}
       >
         <View>
-          <TouchableOpacity style={globalStyles.option} onPress={openGallery}>
+          <TouchableOpacity
+            style={globalStyles.option}
+            onPress={() => openGallery(goToCreatePost)}
+          >
             <AntDesign
               name="picture"
               size={24}
@@ -150,7 +144,10 @@ export const Posts: FC<Props> = ({ navigation }) => {
             />
             <Text>Abrir Galleria</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={globalStyles.option} onPress={openCamera}>
+          <TouchableOpacity
+            style={globalStyles.option}
+            onPress={() => openCamera(goToCreatePost)}
+          >
             <AntDesign
               name="camera"
               size={24}

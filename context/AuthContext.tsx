@@ -3,6 +3,7 @@ import { MMKV } from "react-native-mmkv";
 export const storage = new MMKV();
 
 import React, { createContext, FC, useEffect, useReducer } from "react";
+import { IUser } from "../types";
 
 interface IContext {
   setAuth: React.Dispatch<IAuth>;
@@ -15,6 +16,7 @@ export const AuthContext = createContext<IContext & IAuth>(
 interface IAuth {
   isAuth?: boolean;
   aToken?: string;
+  user?: IUser;
   rToken?: string;
 }
 
@@ -40,7 +42,7 @@ export const AuthProvider: FC = ({ children }) => {
         console.log(data);
 
         if (data.aToken) {
-          setAuth({ aToken: data.aToken, isAuth: true });
+          setAuth({ aToken: data.aToken, isAuth: true, user: data.user });
           axios.defaults.headers.common = { authorization: data.aToken };
         }
       });

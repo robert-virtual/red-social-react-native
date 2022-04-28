@@ -2,7 +2,6 @@ import axios from "axios";
 import React, { useContext, useReducer } from "react";
 import {
   Text,
-  View,
   TextInput,
   TouchableOpacity,
   Alert,
@@ -10,19 +9,13 @@ import {
   ScrollView,
 } from "react-native";
 import { AuthContext } from "../context";
+import { IUser } from "../types";
 import { globalStyles } from "./styles";
-
-interface user {
-  name?: string;
-  email?: string;
-  password?: string;
-  password2?: string;
-}
 
 export function Registro() {
   const { setAuth } = useContext(AuthContext);
-  const [user, setUser] = useReducer<React.Reducer<user, user>>(
-    (prevUser: user, newUser: user) => {
+  const [user, setUser] = useReducer<React.Reducer<IUser, IUser>>(
+    (prevUser: IUser, newUser: IUser) => {
       return { ...prevUser, ...newUser };
     },
     {
